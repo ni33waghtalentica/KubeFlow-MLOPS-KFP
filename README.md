@@ -1,5 +1,7 @@
 # Kubeflow Pipelines — MLOps Project
 
+*Created for Shankar's Assignments.*
+
 ## Project Idea
 
 This repository demonstrates **Kubeflow Pipelines (KFP)** as the orchestration layer for machine learning workflows. The goal is to show how ML steps can be defined as **reusable, containerized pipeline components** and run in a reproducible way—**locally** (in-process or with Docker) or on a **Kubernetes** cluster using the official KFP dashboard (KIND + KFP).
