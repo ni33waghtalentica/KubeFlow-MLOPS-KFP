@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kubeflow Pipelines — MLOps</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --primary: #0f766e;
+      --primary-hover: #0d9488;
+      --success: #059669;
+      --error: #dc2626;
+      --warning: #d97706;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08);
+      --font: 'DM Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg-page);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary) 0%, #14b8a6 100%);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .header-text h1 {
+      margin: 0;
+      font-size: 1.375rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .header-text p {
+      margin: 0.25rem 0 0 0;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    main { display: flex; flex-direction: column; gap: 1.5rem; }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+    }
+    .card-header h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .card-header p {
+      margin: 0.25rem 0 0 0;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+    .card-body { padding: 1.25rem; }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1.4;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+    .btn-secondary {
+      background: #fff;
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    .btn .spinner {
+      width: 1em;
+      height: 1em;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .output-section { margin-top: 1.25rem; }
+    .output-section label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .output-box {
+      font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      min-height: 120px;
+      max-height: 360px;
+      overflow-y: auto;
+      border: 1px solid #334155;
+    }
+    .output-box:empty::before {
+      content: 'Output will appear here after you run an action.';
+      color: #64748b;
+    }
+    .output-box .stdout { color: #e2e8f0; }
+    .output-box .stderr { color: #fca5a5; }
+    .output-box .status-ok { color: #86efac; margin-top: 0.5rem; }
+    .output-box .status-err { color: #fca5a5; margin-top: 0.5rem; }
+    .output-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .output-toolbar .btn { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      border-radius: 4px;
+    }
+    .badge-success { background: #d1fae5; color: #065f46; }
+    .badge-error { background: #fee2e2; color: #991b1b; }
+    .badge-neutral { background: #f1f5f9; color: #475569; }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.5rem; margin: 0.75rem 0; }
+    .status-item { font-size: 0.8125rem; color: var(--text-muted); }
+    .status-item strong { color: var(--text); }
+    .kfp-dashboard-link { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--primary); color: #fff; border-radius: 6px; text-decoration: none; font-weight: 500; margin-top: 0.5rem; }
+    .kfp-dashboard-link:hover { background: var(--primary-hover); color: #fff; }
+    [aria-live="polite"] { outline: none; }
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo" aria-hidden="true">KFP</div>
+      <div class="header-text">
+        <h1>Kubeflow Pipelines</h1>
+        <p>MLOps — Compile and run the Iris pipeline from this project. Use <strong>http://127.0.0.1:5050</strong> (run <code>python app.py</code> in the project folder).</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="card" aria-labelledby="k8s-title">
+        <div class="card-header">
+          <h2 id="k8s-title">KFP on Kubernetes (KIND + official dashboard)</h2>
+          <p>Run the official Kubeflow Pipelines UI on a KIND cluster. Requires Docker, <a href="https://kind.sigs.k8s.io/docs/user/quick-start/" target="_blank" rel="noopener">kind</a>, and <a href="https://kubernetes.io/docs/tasks/tools/" target="_blank" rel="noopener">kubectl</a>. macOS: <code>brew install kind</code>.</p>
+        </div>
+        <div class="card-body">
+          <div class="output-section">
+            <label>Status</label>
+            <div id="k8s-status" class="status-grid" aria-live="polite">Checking…</div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="btn-k8s-setup" data-label="Setup KIND + KFP">Setup KIND + KFP</button>
+            <button type="button" class="btn btn-secondary" id="btn-k8s-pf" data-label="Start KFP Dashboard">Start KFP Dashboard</button>
+            <button type="button" class="btn btn-primary" id="btn-upload-pipelines" data-label="Upload all pipelines to KFP">Upload all pipelines to KFP</button>
+            <a id="link-kfp-dashboard" class="kfp-dashboard-link" href="http://localhost:8080" target="_blank" rel="noopener" style="display: none;">Open KFP Dashboard →</a>
+          </div>
+          <p class="muted" style="margin-top: 0.75rem; font-size: 0.8125rem;">Click <strong>Upload all pipelines to KFP</strong> to compile and register all pipelines (Hello, Iris, Animal Species, Nationality type, Viruses, Sentiment Check, Data Summary) from this app (avoids browser “Failed to fetch”). Or in the KFP dashboard: upload <code>hello_world_pipeline.yaml</code>, <code>iris_pipeline.yaml</code>, <code>animal_species_pipeline.yaml</code>, <code>nationality_type_pipeline.yaml</code>, or <code>viruses_pipeline.yaml</code> (compile first below), then create a run. If Setup fails with “address already in use”, run in terminal: <code>kind delete cluster --name kfp-demo</code> then try Setup again.</p>
+          <div class="output-section">
+            <label for="k8s-output">Setup / port-forward output</label>
+            <div id="k8s-output" class="output-box" role="log" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="pipeline-title">
+        <div class="card-header">
+          <h2 id="pipeline-title">Pipeline: iris-no-artifacts-pipeline</h2>
+          <p>Load Iris dataset → Train Random Forest classifier → Report accuracy. Compile to YAML or run locally.</p>
+        </div>
+        <div class="card-body">
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="btn-compile" data-endpoint="/api/compile" data-label="Compile Iris pipeline" aria-label="Compile Iris pipeline to YAML">
+              <span class="btn-text">Compile Iris pipeline</span>
+            </button>
+            <button type="button" class="btn btn-secondary" id="btn-compile-hello" data-endpoint="/api/compile-hello" data-label="Compile Hello World" aria-label="Compile Hello World pipeline to YAML">Compile Hello World</button>
+            <button type="button" class="btn btn-secondary" id="btn-compile-animal" data-endpoint="/api/compile-animal" data-label="Compile Animal Species" aria-label="Compile Animal Species pipeline">Compile Animal Species</button>
+            <button type="button" class="btn btn-secondary" id="btn-compile-nationality" data-endpoint="/api/compile-nationality" data-label="Compile Nationality type" aria-label="Compile Nationality type pipeline">Compile Nationality type</button>
+            <button type="button" class="btn btn-secondary" id="btn-compile-viruses" data-endpoint="/api/compile-viruses" data-label="Compile Viruses" aria-label="Compile Viruses pipeline">Compile Viruses</button>
+            <button type="button" class="btn btn-secondary" id="btn-compile-sentiment" data-endpoint="/api/compile-sentiment" data-label="Compile Sentiment Check" aria-label="Compile Sentiment Check pipeline">Compile Sentiment Check</button>
+            <button type="button" class="btn btn-secondary" id="btn-compile-summary" data-endpoint="/api/compile-summary" data-label="Compile Data Summary" aria-label="Compile Data Summary pipeline">Compile Data Summary</button>
+            <button type="button" class="btn btn-secondary" id="btn-test" data-endpoint="/api/run-test" data-label="Run test (in-process)" aria-label="Run in-process test, no Docker">
+              Run test (in-process)
+            </button>
+            <button type="button" class="btn btn-secondary" id="btn-local" data-endpoint="/api/run-local" data-label="Run pipeline (Docker)" aria-label="Run full pipeline with Docker">
+              Run pipeline (Docker)
+            </button>
+          </div>
+
+          <div class="output-section">
+            <label for="output">Output</label>
+            <div id="output" class="output-box" role="log" aria-live="polite" aria-label="Command output"></div>
+            <div class="output-toolbar">
+              <button type="button" class="btn btn-secondary" id="btn-copy" aria-label="Copy output to clipboard">Copy output</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Use “Setup KIND + KFP” to run the official Kubeflow Pipelines UI on a local Kubernetes cluster; then upload and run pipelines from the dashboard.
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      const output = document.getElementById('output');
+      const btnCopy = document.getElementById('btn-copy');
+      const API_BASE = window.location.origin;
+
+      function parseJsonResponse(response) {
+        const ct = (response.headers.get('content-type') || '').toLowerCase();
+        if (!ct.includes('application/json')) {
+          return response.text().then(function(text) {
+            var msg = 'Server did not return JSON. ';
+            if (text && text.trim().toLowerCase().indexOf('<!doctype') === 0) {
+              msg += 'Open the app at ' + API_BASE + ' (run: python app.py in the project folder) and try again.';
+            } else {
+              msg += response.status ? 'Status: ' + response.status : '';
+            }
+            throw new Error(msg);
+          });
+        }
+        return response.json();
+      }
+
+      function renderResult(data) {
+        output.innerHTML = '';
+        if (data.stdout) {
+          const pre = document.createElement('span');
+          pre.className = 'stdout';
+          pre.textContent = data.stdout;
+          output.appendChild(pre);
+        }
+        if (data.stderr) {
+          const err = document.createElement('span');
+          err.className = 'stderr';
+          err.textContent = data.stderr;
+          output.appendChild(err);
+        }
+        const status = document.createElement('div');
+        status.className = data.ok ? 'status-ok' : 'status-err';
+        status.textContent = data.ok ? 'Completed successfully.' : 'Finished with exit code ' + data.exit_code + '.';
+        output.appendChild(status);
+        output.scrollTop = output.scrollHeight;
+      }
+
+      function setBusy(btn, busy) {
+        const label = btn.dataset.label;
+        btn.disabled = busy;
+        if (busy) {
+          btn.innerHTML = '<span class="spinner" aria-hidden="true"></span><span class="btn-text">Running…</span>';
+        } else {
+          btn.innerHTML = '<span class="btn-text">' + label + '</span>';
+        }
+      }
+
+      function run(endpoint, btn) {
+        setBusy(btn, true);
+        output.innerHTML = '<span class="stdout">Running…</span>';
+        output.setAttribute('aria-busy', 'true');
+
+        fetch(endpoint, { method: 'POST' })
+          .then(parseJsonResponse)
+          .then(function(data) {
+            renderResult(data);
+          })
+          .catch(function(e) {
+            output.innerHTML = '';
+            const err = document.createElement('span');
+            err.className = 'stderr';
+            err.textContent = 'Request failed: ' + e.message;
+            output.appendChild(err);
+            const status = document.createElement('div');
+            status.className = 'status-err';
+            status.textContent = 'Failed.';
+            output.appendChild(status);
+          })
+          .finally(function() {
+            setBusy(btn, false);
+            output.removeAttribute('aria-busy');
+          });
+      }
+
+      btnCopy.addEventListener('click', function() {
+        var text = output.textContent || '';
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(function() {
+          btnCopy.textContent = 'Copied';
+          setTimeout(function() { btnCopy.textContent = 'Copy output'; }, 2000);
+        });
+      });
+
+      document.querySelectorAll('.actions button[data-endpoint]').forEach(function(btn) {
+        if (btn.id === 'btn-compile-hello') {
+          btn.addEventListener('click', function() {
+            var lb = btn.dataset.label;
+            btn.disabled = true;
+            output.innerHTML = '<span class="stdout">Compiling Hello World pipeline…</span>';
+            fetch('/api/compile-hello', { method: 'POST' }).then(parseJsonResponse).then(function(data) {
+              renderResult(data);
+            }).catch(function(e) { renderResult({ ok: false, stdout: '', stderr: e.message, exit_code: -1 }); }).finally(function() {
+              btn.disabled = false;
+              btn.textContent = lb;
+            });
+          });
+        } else {
+          btn.addEventListener('click', function() { run(btn.dataset.endpoint, btn); });
+        }
+      });
+
+      // ---- KFP on Kubernetes ----
+      var k8sStatusEl = document.getElementById('k8s-status');
+      var k8sOutputEl = document.getElementById('k8s-output');
+      var linkDashboard = document.getElementById('link-kfp-dashboard');
+      var btnSetup = document.getElementById('btn-k8s-setup');
+      var btnPf = document.getElementById('btn-k8s-pf');
+
+      function renderK8sStatus(data) {
+        if (!data) { k8sStatusEl.textContent = 'Could not load status.'; return; }
+        var html = '';
+        html += '<span class="status-item">Docker: <strong>' + (data.docker ? '✓' : '✗') + '</strong></span>';
+        html += '<span class="status-item">kind: <strong>' + (data.kind ? '✓' : '✗') + '</strong></span>';
+        html += '<span class="status-item">kubectl: <strong>' + (data.kubectl ? '✓' : '✗') + '</strong></span>';
+        html += '<span class="status-item">Cluster: <strong>' + (data.cluster || '—') + '</strong></span>';
+        html += '<span class="status-item">kubeflow ns: <strong>' + (data.kubeflow_ns ? '✓' : '✗') + '</strong></span>';
+        html += '<span class="status-item">KFP UI svc: <strong>' + (data.kfp_ui_service ? '✓' : '✗') + '</strong></span>';
+        if (data.kfp_pods && data.kfp_pods.length) {
+          html += '<span class="status-item">Pods: <strong>' + data.kfp_pods.length + '</strong></span>';
+        }
+        k8sStatusEl.innerHTML = html;
+      }
+
+      function fetchK8sStatus() {
+        fetch('/api/k8s/status').then(parseJsonResponse).then(renderK8sStatus).catch(function(e) {
+          k8sStatusEl.textContent = 'Status unavailable. Use ' + API_BASE + ' (python app.py).';
+        });
+      }
+
+      fetch('/api/health').then(parseJsonResponse).then(function(d) {
+        if (!d.ok || !d.routes || d.routes.length < 7) {
+          k8sStatusEl.innerHTML = '<span class="status-err">Backend outdated. Stop the server (Ctrl+C) and run: python app.py</span>';
+        } else {
+          fetchK8sStatus();
+        }
+      }).catch(function() {
+        k8sStatusEl.innerHTML = '<span class="status-err">Backend missing routes. Stop the server (Ctrl+C) and run: python app.py then reload this page.</span>';
+      });
+      setInterval(fetchK8sStatus, 15000);
+
+      btnSetup.addEventListener('click', function() {
+        var label = btnSetup.dataset.label;
+        btnSetup.disabled = true;
+        btnSetup.textContent = 'Running… (may take 5–10 min)';
+        k8sOutputEl.innerHTML = '<span class="stdout">Creating KIND cluster and installing KFP…</span>';
+        fetch('/api/k8s/setup', { method: 'POST' })
+          .then(parseJsonResponse)
+          .then(function(data) {
+            k8sOutputEl.innerHTML = '';
+            if (data.stdout) {
+              var pre = document.createElement('span'); pre.className = 'stdout'; pre.textContent = data.stdout; k8sOutputEl.appendChild(pre);
+            }
+            if (data.stderr) {
+              var err = document.createElement('span'); err.className = 'stderr'; err.textContent = data.stderr; k8sOutputEl.appendChild(err);
+            }
+            var status = document.createElement('div');
+            status.className = data.ok ? 'status-ok' : 'status-err';
+            status.textContent = data.ok ? 'Setup completed.' : 'Setup finished with errors (exit ' + data.exit_code + ').';
+            k8sOutputEl.appendChild(status);
+            fetchK8sStatus();
+          })
+          .catch(function(e) {
+            k8sOutputEl.innerHTML = '<span class="stderr">Request failed: ' + e.message + '</span>';
+          })
+          .finally(function() {
+            btnSetup.disabled = false;
+            btnSetup.textContent = label;
+          });
+      });
+
+      btnPf.addEventListener('click', function() {
+        var label = btnPf.dataset.label;
+        btnPf.disabled = true;
+        btnPf.textContent = 'Starting…';
+        fetch('/api/k8s/port-forward', { method: 'POST' })
+          .then(parseJsonResponse)
+          .then(function(data) {
+            k8sOutputEl.innerHTML = '<span class="' + (data.ok ? 'status-ok' : 'status-err') + '">' + (data.message || '') + '</span>';
+            if (data.ok && data.url) {
+              linkDashboard.href = data.url;
+              linkDashboard.style.display = 'inline-flex';
+            } else {
+              linkDashboard.style.display = 'none';
+            }
+          })
+          .catch(function(e) {
+            k8sOutputEl.innerHTML = '<span class="stderr">Failed: ' + e.message + '</span>';
+          })
+          .finally(function() {
+            btnPf.disabled = false;
+            btnPf.textContent = label;
+          });
+      });
+
+      var btnUploadPipelines = document.getElementById('btn-upload-pipelines');
+      if (btnUploadPipelines) {
+        btnUploadPipelines.addEventListener('click', function() {
+          var label = btnUploadPipelines.dataset.label;
+          btnUploadPipelines.disabled = true;
+          btnUploadPipelines.textContent = 'Uploading…';
+          k8sOutputEl.innerHTML = '<span class="stdout">Compiling and uploading all pipelines to KFP…</span>';
+          fetch('/api/k8s/upload-pipelines', { method: 'POST' })
+            .then(parseJsonResponse)
+            .then(function(data) {
+              k8sOutputEl.innerHTML = '';
+              if (data.message) {
+                var msg = document.createElement('div');
+                msg.className = data.ok ? 'status-ok' : 'status-err';
+                msg.textContent = data.message;
+                k8sOutputEl.appendChild(msg);
+              }
+              if (data.results && data.results.length) {
+                var list = document.createElement('pre');
+                list.style.marginTop = '0.5rem';
+                list.style.fontSize = '0.8125rem';
+                list.textContent = data.results.map(function(r) {
+                  return (r.ok ? '✓ ' : '✗ ') + r.pipeline + (r.error ? ': ' + r.error : '');
+                }).join('\n');
+                k8sOutputEl.appendChild(list);
+              }
+            })
+            .catch(function(e) {
+              k8sOutputEl.innerHTML = '<span class="stderr">Upload failed: ' + e.message + '</span>';
+            })
+            .finally(function() {
+              btnUploadPipelines.disabled = false;
+              btnUploadPipelines.textContent = label;
+            });
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

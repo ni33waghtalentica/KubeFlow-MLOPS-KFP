@@ -1,0 +1,4 @@
+kfp>=2.9.0
+flask>=2.0.0
+docker>=6.0.0
+scikit-learn>=1.0.0

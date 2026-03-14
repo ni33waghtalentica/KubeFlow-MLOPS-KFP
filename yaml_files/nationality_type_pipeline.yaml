@@ -1,0 +1,87 @@
+# PIPELINE DEFINITION
+# Name: nationality-type
+# Description: Pipeline for nationality type classification.
+# Inputs:
+#    region: str [Default: 'global']
+# Outputs:
+#    Output: str
+components:
+  comp-nationality-step:
+    executorLabel: exec-nationality-step
+    inputDefinitions:
+      parameters:
+        region:
+          defaultValue: global
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-nationality-step:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - nationality_step
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef nationality_step(region: str = \"global\") -> str:\n    \"\"\"\
+          Demo component for nationality type pipeline.\"\"\"\n    msg = f\"Nationality\
+          \ type pipeline: region '{region}'.\"\n    print(msg)\n    return msg\n\n"
+        image: python:3.10-slim
+pipelineInfo:
+  description: Pipeline for nationality type classification.
+  name: nationality-type
+root:
+  dag:
+    outputs:
+      parameters:
+        Output:
+          valueFromParameter:
+            outputParameterKey: Output
+            producerSubtask: nationality-step
+    tasks:
+      nationality-step:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-nationality-step
+        inputs:
+          parameters:
+            region:
+              componentInputParameter: region
+        taskInfo:
+          name: nationality-step
+  inputDefinitions:
+    parameters:
+      region:
+        defaultValue: global
+        isOptional: true
+        parameterType: STRING
+  outputDefinitions:
+    parameters:
+      Output:
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.0

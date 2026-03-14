@@ -1,0 +1,88 @@
+# PIPELINE DEFINITION
+# Name: animal-species
+# Description: Pipeline for animal species classification or listing.
+# Inputs:
+#    species_input: str [Default: 'mammals']
+# Outputs:
+#    Output: str
+components:
+  comp-animal-species-step:
+    executorLabel: exec-animal-species-step
+    inputDefinitions:
+      parameters:
+        species_input:
+          defaultValue: mammals
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-animal-species-step:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - animal_species_step
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef animal_species_step(species_input: str = \"mammals\") -> str:\n\
+          \    \"\"\"Demo component for animal species pipeline.\"\"\"\n    msg =\
+          \ f\"Animal Species pipeline: processing '{species_input}'.\"\n    print(msg)\n\
+          \    return msg\n\n"
+        image: python:3.10-slim
+pipelineInfo:
+  description: Pipeline for animal species classification or listing.
+  name: animal-species
+root:
+  dag:
+    outputs:
+      parameters:
+        Output:
+          valueFromParameter:
+            outputParameterKey: Output
+            producerSubtask: animal-species-step
+    tasks:
+      animal-species-step:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-animal-species-step
+        inputs:
+          parameters:
+            species_input:
+              componentInputParameter: species_input
+        taskInfo:
+          name: animal-species-step
+  inputDefinitions:
+    parameters:
+      species_input:
+        defaultValue: mammals
+        isOptional: true
+        parameterType: STRING
+  outputDefinitions:
+    parameters:
+      Output:
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.0

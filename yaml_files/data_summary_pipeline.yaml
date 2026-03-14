@@ -1,0 +1,88 @@
+# PIPELINE DEFINITION
+# Name: data-summary
+# Description: Demo pipeline for dataset summary statistics.
+# Inputs:
+#    dataset_name: str [Default: 'sample']
+# Outputs:
+#    Output: str
+components:
+  comp-summary-step:
+    executorLabel: exec-summary-step
+    inputDefinitions:
+      parameters:
+        dataset_name:
+          defaultValue: sample
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-summary-step:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - summary_step
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef summary_step(dataset_name: str = \"sample\") -> str:\n    \"\"\
+          \"Demo component: returns a placeholder summary for the dataset.\"\"\"\n\
+          \    summary = f\"Data Summary: dataset '{dataset_name}' \u2014 rows: 1000,\
+          \ cols: 5 (demo).\"\n    print(summary)\n    return summary\n\n"
+        image: python:3.10-slim
+pipelineInfo:
+  description: Demo pipeline for dataset summary statistics.
+  name: data-summary
+root:
+  dag:
+    outputs:
+      parameters:
+        Output:
+          valueFromParameter:
+            outputParameterKey: Output
+            producerSubtask: summary-step
+    tasks:
+      summary-step:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-summary-step
+        inputs:
+          parameters:
+            dataset_name:
+              componentInputParameter: dataset_name
+        taskInfo:
+          name: summary-step
+  inputDefinitions:
+    parameters:
+      dataset_name:
+        defaultValue: sample
+        isOptional: true
+        parameterType: STRING
+  outputDefinitions:
+    parameters:
+      Output:
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.0
